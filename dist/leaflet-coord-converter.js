@@ -9,9 +9,9 @@ r.CoordConverter = class {
    * @param {number} lat 纬度
    * @returns {Object} {lng, lat}
    */
-  bd09ToGps84(t, s) {
-    const i = this.bd09ToGcj02(t, s);
-    return this.gcj02ToGps84(i.lng, i.lat);
+  bd09ToGps84(o, t) {
+    const s = this.bd09ToGcj02(o, t);
+    return this.gcj02ToGps84(s.lng, s.lat);
   }
   /**
    * GPS84坐标转百度坐标
@@ -19,9 +19,9 @@ r.CoordConverter = class {
    * @param {number} lat 纬度
    * @returns {Object} {lng, lat}
    */
-  gps84ToBd09(t, s) {
-    const i = this.gps84ToGcj02(t, s);
-    return this.gcj02ToBd09(i.lng, i.lat);
+  gps84ToBd09(o, t) {
+    const s = this.gps84ToGcj02(o, t);
+    return this.gcj02ToBd09(s.lng, s.lat);
   }
   /**
    * GPS84坐标转火星坐标(GCJ02)
@@ -29,16 +29,16 @@ r.CoordConverter = class {
    * @param {number} lat 纬度
    * @returns {Object} {lng, lat}
    */
-  gps84ToGcj02(t, s) {
-    let i = this._transformLat(t - 105, s - 35), o = this._transformLng(t - 105, s - 35);
-    const h = s / 180 * this.pi;
+  gps84ToGcj02(o, t) {
+    let s = this._transformLat(o - 105, t - 35), i = this._transformLng(o - 105, t - 35);
+    const h = t / 180 * this.pi;
     let n = Math.sin(h);
     n = 1 - this.ee * n * n;
     const a = Math.sqrt(n);
-    i = i * 180 / (this.a * (1 - this.ee) / (n * a) * this.pi), o = o * 180 / (this.a / a * Math.cos(h) * this.pi);
-    const e = s + i;
+    s = s * 180 / (this.a * (1 - this.ee) / (n * a) * this.pi), i = i * 180 / (this.a / a * Math.cos(h) * this.pi);
+    const e = t + s;
     return {
-      lng: t + o,
+      lng: o + i,
       lat: e
     };
   }
@@ -48,10 +48,10 @@ r.CoordConverter = class {
    * @param {number} lat 纬度
    * @returns {Object} {lng, lat}
    */
-  gcj02ToGps84(t, s) {
-    const i = this._transform(t, s), o = t * 2 - i.lng, h = s * 2 - i.lat;
+  gcj02ToGps84(o, t) {
+    const s = this._transform(o, t), i = o * 2 - s.lng, h = t * 2 - s.lat;
     return {
-      lng: o,
+      lng: i,
       lat: h
     };
   }
@@ -61,8 +61,8 @@ r.CoordConverter = class {
    * @param {number} lat 纬度
    * @returns {Object} {lng, lat}
    */
-  gcj02ToBd09(t, s) {
-    const i = Math.sqrt(t * t + s * s) + 2e-5 * Math.sin(s * this.x_pi), o = Math.atan2(s, t) + 3e-6 * Math.cos(t * this.x_pi), h = i * Math.cos(o) + 65e-4, n = i * Math.sin(o) + 6e-3;
+  gcj02ToBd09(o, t) {
+    const s = Math.sqrt(o * o + t * t) + 2e-5 * Math.sin(t * this.x_pi), i = Math.atan2(t, o) + 3e-6 * Math.cos(o * this.x_pi), h = s * Math.cos(i) + 65e-4, n = s * Math.sin(i) + 6e-3;
     return {
       lng: h,
       lat: n
@@ -74,8 +74,8 @@ r.CoordConverter = class {
    * @param {number} lat 纬度
    * @returns {Object} {lng, lat}
    */
-  bd09ToGcj02(t, s) {
-    const i = t - 65e-4, o = s - 6e-3, h = Math.sqrt(i * i + o * o) - 2e-5 * Math.sin(o * this.x_pi), n = Math.atan2(o, i) - 3e-6 * Math.cos(i * this.x_pi), a = h * Math.cos(n), e = h * Math.sin(n);
+  bd09ToGcj02(o, t) {
+    const s = o - 65e-4, i = t - 6e-3, h = Math.sqrt(s * s + i * i) - 2e-5 * Math.sin(i * this.x_pi), n = Math.atan2(i, s) - 3e-6 * Math.cos(s * this.x_pi), a = h * Math.cos(n), e = h * Math.sin(n);
     return {
       lng: a,
       lat: e
@@ -88,49 +88,49 @@ r.CoordConverter = class {
    * @param {string} toType 目标坐标系类型 'gps84'|'gcj02'|'bd09'
    * @returns {Array} 转换后的坐标数组
    */
-  convertArray(t, s, i) {
-    if (s === i) return t;
-    const o = {
+  convertArray(o, t, s) {
+    if (t === s) return o;
+    const i = {
       gps84_gcj02: this.gps84ToGcj02.bind(this),
       gps84_bd09: this.gps84ToBd09.bind(this),
       gcj02_gps84: this.gcj02ToGps84.bind(this),
       gcj02_bd09: this.gcj02ToBd09.bind(this),
       bd09_gps84: this.bd09ToGps84.bind(this),
       bd09_gcj02: this.bd09ToGcj02.bind(this)
-    }, h = `${s}_${i}`, n = o[h];
+    }, h = `${t}_${s}`, n = i[h];
     if (!n)
-      throw new Error(`不支持的转换类型: ${s} -> ${i}`);
-    return t.map((a) => n(a.lng, a.lat));
+      throw new Error(`不支持的转换类型: ${t} -> ${s}`);
+    return o.map((a) => n(a.lng, a.lat));
   }
   /**
    * 私有方法：坐标变换
    */
-  _transform(t, s) {
-    let i = this._transformLat(t - 105, s - 35), o = this._transformLng(t - 105, s - 35);
-    const h = s / 180 * this.pi;
+  _transform(o, t) {
+    let s = this._transformLat(o - 105, t - 35), i = this._transformLng(o - 105, t - 35);
+    const h = t / 180 * this.pi;
     let n = Math.sin(h);
     n = 1 - this.ee * n * n;
     const a = Math.sqrt(n);
-    i = i * 180 / (this.a * (1 - this.ee) / (n * a) * this.pi), o = o * 180 / (this.a / a * Math.cos(h) * this.pi);
-    const e = s + i;
+    s = s * 180 / (this.a * (1 - this.ee) / (n * a) * this.pi), i = i * 180 / (this.a / a * Math.cos(h) * this.pi);
+    const e = t + s;
     return {
-      lng: t + o,
+      lng: o + i,
       lat: e
     };
   }
   /**
    * 私有方法：纬度变换
    */
-  _transformLat(t, s) {
-    let i = -100 + 2 * t + 3 * s + 0.2 * s * s + 0.1 * t * s + 0.2 * Math.sqrt(Math.abs(t));
-    return i += (20 * Math.sin(6 * t * this.pi) + 20 * Math.sin(2 * t * this.pi)) * 2 / 3, i += (20 * Math.sin(s * this.pi) + 40 * Math.sin(s / 3 * this.pi)) * 2 / 3, i += (160 * Math.sin(s / 12 * this.pi) + 320 * Math.sin(s * this.pi / 30)) * 2 / 3, i;
+  _transformLat(o, t) {
+    let s = -100 + 2 * o + 3 * t + 0.2 * t * t + 0.1 * o * t + 0.2 * Math.sqrt(Math.abs(o));
+    return s += (20 * Math.sin(6 * o * this.pi) + 20 * Math.sin(2 * o * this.pi)) * 2 / 3, s += (20 * Math.sin(t * this.pi) + 40 * Math.sin(t / 3 * this.pi)) * 2 / 3, s += (160 * Math.sin(t / 12 * this.pi) + 320 * Math.sin(t * this.pi / 30)) * 2 / 3, s;
   }
   /**
    * 私有方法：经度变换
    */
-  _transformLng(t, s) {
-    let i = 300 + t + 2 * s + 0.1 * t * t + 0.1 * t * s + 0.1 * Math.sqrt(Math.abs(t));
-    return i += (20 * Math.sin(6 * t * this.pi) + 20 * Math.sin(2 * t * this.pi)) * 2 / 3, i += (20 * Math.sin(t * this.pi) + 40 * Math.sin(t / 3 * this.pi)) * 2 / 3, i += (150 * Math.sin(t / 12 * this.pi) + 300 * Math.sin(t / 30 * this.pi)) * 2 / 3, i;
+  _transformLng(o, t) {
+    let s = 300 + o + 2 * t + 0.1 * o * o + 0.1 * o * t + 0.1 * Math.sqrt(Math.abs(o));
+    return s += (20 * Math.sin(6 * o * this.pi) + 20 * Math.sin(2 * o * this.pi)) * 2 / 3, s += (20 * Math.sin(o * this.pi) + 40 * Math.sin(o / 3 * this.pi)) * 2 / 3, s += (150 * Math.sin(o / 12 * this.pi) + 300 * Math.sin(o / 30 * this.pi)) * 2 / 3, s;
   }
 };
 r.coordConverter = new r.CoordConverter();
@@ -138,22 +138,43 @@ r.coordConvert = function() {
   return r.coordConverter;
 };
 r.GridLayer.include({
-  _setZoomTransform: function(t, s, i) {
-    let o = s;
-    o != null && this.options && (this.options.coordType === "gcj02" ? o = r.coordConverter.gps84ToGcj02(
-      s.lng,
-      s.lat
-    ) : this.options.coordType === "bd09" && (o = r.coordConverter.gps84ToBd09(s.lng, s.lat)));
-    const h = this._map.getZoomScale(i, t.zoom), n = t.origin.multiplyBy(h).subtract(this._map._getNewPixelOrigin(o, i)).round();
-    r.Browser.any3d ? r.DomUtil.setTransform(t.el, n, h) : r.DomUtil.setPosition(t.el, n);
-  },
-  _getTiledPixelBounds: function(t) {
-    let s = t;
-    s != null && this.options && (this.options.coordType === "gcj02" ? s = r.coordConverter.gps84ToGcj02(
+  _setZoomTransform: function(o, t, s) {
+    let i = t;
+    i != null && this.options && (this.options.currentType === "gps84" && (this.options.coordType === "gcj02" ? i = r.coordConverter.gps84ToGcj02(
       t.lng,
       t.lat
-    ) : this.options.coordType === "bd09" && (s = r.coordConverter.gps84ToBd09(t.lng, t.lat)));
-    const i = this._map, o = i._animatingZoom ? Math.max(i._animateToZoom, i.getZoom()) : i.getZoom(), h = i.getZoomScale(o, this._tileZoom), n = i.project(s, this._tileZoom).floor(), a = i.getSize().divideBy(h * 2);
+    ) : this.options.coordType === "bd09" && (i = r.coordConverter.gps84ToBd09(
+      t.lng,
+      t.lat
+    ))), this.options.currentType === "gcj02" && (this.options.coordType === "gps84" ? i = r.coordConverter.gcj02ToGps84(
+      t.lng,
+      t.lat
+    ) : this.options.coordType === "bd09" && (i = r.coordConverter.gcj02ToBd09(
+      t.lng,
+      t.lat
+    ))), this.options.currentType === "bd09" && (this.options.coordType === "gps84" ? i = r.coordConverter.bd09ToGps84(
+      t.lng,
+      t.lat
+    ) : this.options.coordType === "gcj02" && (i = r.coordConverter.bd09ToGcj02(
+      t.lng,
+      t.lat
+    ))));
+    const h = this._map.getZoomScale(s, o.zoom), n = o.origin.multiplyBy(h).subtract(this._map._getNewPixelOrigin(i, s)).round();
+    r.Browser.any3d ? r.DomUtil.setTransform(o.el, n, h) : r.DomUtil.setPosition(o.el, n);
+  },
+  _getTiledPixelBounds: function(o) {
+    let t = o;
+    t != null && this.options && this.options.currentType === "gps84" && (this.options.coordType === "gcj02" ? t = r.coordConverter.gps84ToGcj02(
+      o.lng,
+      o.lat
+    ) : this.options.coordType === "bd09" && (t = r.coordConverter.gps84ToBd09(
+      o.lng,
+      o.lat
+    ))), this.options.currentType === "gcj02" && (this.options.coordType === "gps84" ? t = r.coordConverter.gcj02ToGps84(
+      o.lng,
+      o.lat
+    ) : this.options.coordType === "bd09" && (t = r.coordConverter.gcj02ToBd09(o.lng, o.lat))), this.options.currentType === "bd09" && (this.options.coordType === "gps84" ? t = r.coordConverter.bd09ToGps84(o.lng, o.lat) : this.options.coordType === "gcj02" && (t = r.coordConverter.bd09ToGcj02(o.lng, o.lat)));
+    const s = this._map, i = s._animatingZoom ? Math.max(s._animateToZoom, s.getZoom()) : s.getZoom(), h = s.getZoomScale(i, this._tileZoom), n = s.project(t, this._tileZoom).floor(), a = s.getSize().divideBy(h * 2);
     return new r.Bounds(
       n.subtract(a),
       n.add(a)
