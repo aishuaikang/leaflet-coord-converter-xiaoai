@@ -66,25 +66,37 @@ declare module "leaflet" {
     // 扩展现有的 TileLayerOptions 接口
     interface TileLayerOptions {
         /**
+         * 当前坐标系类型
+         */
+        currentCoordType?: CoordType;
+        /**
          * 坐标系类型
          */
-        coordType?: "gps84" | "gcj02" | "bd09";
+        coordType?: CoordType;
     }
 
     // 扩展现有的 GridLayerOptions 接口
     interface GridLayerOptions {
         /**
+         * 当前坐标系类型
+         */
+        currentCoordType?: CoordType;
+        /**
          * 坐标系类型
          */
-        coordType?: "gps84" | "gcj02" | "bd09";
+        coordType?: CoordType;
     }
 
     // 扩展TrackPlayer选项以支持坐标转换
     interface TrackPlayerOptions {
         /**
+         * 当前坐标系类型
+         */
+        currentCoordType?: CoordType;
+        /**
          * 输入轨迹的坐标系类型
          */
-        coordType?: "gps84" | "gcj02" | "bd09";
+        coordType?: CoordType;
     }
 }
 

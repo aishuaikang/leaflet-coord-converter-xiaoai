@@ -245,13 +245,46 @@ L.GridLayer.include({
     _setZoomTransform: function (level, _center, zoom) {
         let center = _center;
         if (center != undefined && this.options) {
-            if (this.options.coordType === "gcj02") {
-                center = L.coordConverter.gps84ToGcj02(
-                    _center.lng,
-                    _center.lat
-                );
-            } else if (this.options.coordType === "bd09") {
-                center = L.coordConverter.gps84ToBd09(_center.lng, _center.lat);
+            if (this.options.currentType === "gps84") {
+                if (this.options.coordType === "gcj02") {
+                    center = L.coordConverter.gps84ToGcj02(
+                        _center.lng,
+                        _center.lat
+                    );
+                } else if (this.options.coordType === "bd09") {
+                    center = L.coordConverter.gps84ToBd09(
+                        _center.lng,
+                        _center.lat
+                    );
+                }
+            }
+
+            if (this.options.currentType === "gcj02") {
+                if (this.options.coordType === "gps84") {
+                    center = L.coordConverter.gcj02ToGps84(
+                        _center.lng,
+                        _center.lat
+                    );
+                } else if (this.options.coordType === "bd09") {
+                    center = L.coordConverter.gcj02ToBd09(
+                        _center.lng,
+                        _center.lat
+                    );
+                }
+            }
+
+            if (this.options.currentType === "bd09") {
+                if (this.options.coordType === "gps84") {
+                    center = L.coordConverter.bd09ToGps84(
+                        _center.lng,
+                        _center.lat
+                    );
+                } else if (this.options.coordType === "gcj02") {
+                    center = L.coordConverter.bd09ToGcj02(
+                        _center.lng,
+                        _center.lat
+                    );
+                }
             }
         }
         const scale = this._map.getZoomScale(zoom, level.zoom);
@@ -270,15 +303,40 @@ L.GridLayer.include({
     _getTiledPixelBounds: function (_center) {
         let center = _center;
         if (center != undefined && this.options) {
-            if (this.options.coordType === "gcj02") {
-                center = L.coordConverter.gps84ToGcj02(
+            if (this.options.currentType === "gps84") {
+                if (this.options.coordType === "gcj02") {
+                    center = L.coordConverter.gps84ToGcj02(
+                        _center.lng,
+                        _center.lat
+                    );
+                } else if (this.options.coordType === "bd09") {
+                    center = L.coordConverter.gps84ToBd09(
+                        _center.lng,
+                        _center.lat
+                    );
+                }
+            }
+        }
+
+        if (this.options.currentType === "gcj02") {
+            if (this.options.coordType === "gps84") {
+                center = L.coordConverter.gcj02ToGps84(
                     _center.lng,
                     _center.lat
                 );
             } else if (this.options.coordType === "bd09") {
-                center = L.coordConverter.gps84ToBd09(_center.lng, _center.lat);
+                center = L.coordConverter.gcj02ToBd09(_center.lng, _center.lat);
             }
         }
+
+        if (this.options.currentType === "bd09") {
+            if (this.options.coordType === "gps84") {
+                center = L.coordConverter.bd09ToGps84(_center.lng, _center.lat);
+            } else if (this.options.coordType === "gcj02") {
+                center = L.coordConverter.bd09ToGcj02(_center.lng, _center.lat);
+            }
+        }
+
         const map = this._map;
         const mapZoom = map._animatingZoom
             ? Math.max(map._animateToZoom, map.getZoom())
