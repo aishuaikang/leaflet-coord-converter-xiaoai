@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet 坐标转换插件 TypeScript 测试</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .demo-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .test-results {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #007cff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0066cc;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Leaflet 坐标转换插件 TypeScript 类型测试</h1>
+
+        <div class="demo-section">
+            <h3>TypeScript 类型定义测试结果</h3>
+            <p>此页面用于测试 TypeScript 类型定义是否正确。请查看控制台输出和下方的测试结果。</p>
+            <div class="controls">
+                <button onclick="runTypeTests()">运行类型测试</button>
+                <button onclick="testTileLayerOptions()">测试 TileLayer 选项</button>
+                <button onclick="clearResults()">清除结果</button>
+            </div>
+            <div id="testResults" class="test-results"></div>
+        </div>
+
+        <div class="demo-section">
+            <h3>地图演示</h3>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="../src/CoordConverter.js"></script>
+    <script>
+        // 在 JavaScript 中模拟 TypeScript 的使用方式
+        let testResults = [];
+
+        function logTest(testName, result, details = '') {
+            const status = result ? 'PASS' : 'FAIL';
+            const message = `[${status}] ${testName}: ${details}`;
+            testResults.push(message);
+            console.log(message);
+            updateTestDisplay();
+        }
+
+        function updateTestDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = testResults.join('\n');
+        }
+
+        function clearResults() {
+            testResults = [];
+            updateTestDisplay();
+        }
+
+        function runTypeTests() {
+            clearResults();
+            logTest('TypeScript 类型测试', true, '开始运行测试...');
+
+            // 测试坐标转换器是否存在
+            try {
+                if (typeof L.coordConverter !== 'undefined') {
+                    logTest('L.coordConverter 存在', true, '全局实例可用');
+                } else {
+                    logTest('L.coordConverter 存在', false, '全局实例不可用');
+                }
+            } catch (e) {
+                logTest('L.coordConverter 存在', false, e.message);
+            }
+
+            // 测试坐标转换功能
+            try {
+                const testCoord = { lng: 116.404, lat: 39.915 };
+                if (L.coordConverter) {
+                    const result = L.coordConverter.gps84ToGcj02(testCoord.lng, testCoord.lat);
+                    logTest('坐标转换功能', true, `${testCoord.lng}, ${testCoord.lat} -> ${result.lng.toFixed(6)}, ${result.lat.toFixed(6)}`);
+                } else {
+                    logTest('坐标转换功能', false, 'coordConverter 不可用');
+                }
+            } catch (e) {
+                logTest('坐标转换功能', false, e.message);
+            }
+
+            // 测试批量转换
+            try {
+                if (L.coordConverter) {
+                    const coords = [
+                        { lng: 116.404, lat: 39.915 },
+                        { lng: 116.407, lat: 39.918 }
+                    ];
+                    const converted = L.coordConverter.convertArray(coords, 'gps84', 'gcj02');
+                    logTest('批量转换功能', Array.isArray(converted) && converted.length === 2, `转换了 ${converted.length} 个坐标点`);
+                } else {
+                    logTest('批量转换功能', false, 'coordConverter 不可用');
+                }
+            } catch (e) {
+                logTest('批量转换功能', false, e.message);
+            }
+
+            logTest('所有测试完成', true, '检查上方结果详情');
+        }
+
+        function testTileLayerOptions() {
+            clearResults();
+            logTest('TileLayer 选项测试', true, '开始测试...');
+
+            try {
+                // 在 JavaScript 中，我们无法直接测试 TypeScript 类型
+                // 但我们可以测试这些选项是否能正常工作
+
+                // 测试创建带有 coordType 的 TileLayer
+                const layer1 = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+                    attribution: 'Leaflet高德离线地图',
+                    coordType: "gcj02",  // 这在 TypeScript 中应该不会报错
+                    tms: true
+                });
+
+                logTest('创建 GCJ02 TileLayer', true, '成功创建带有 coordType: "gcj02" 的图层');
+
+                const layer2 = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+                    attribution: '百度地图',
+                    coordType: "bd09",  // 这在 TypeScript 中应该不会报错
+                    tms: true
+                });
+
+                logTest('创建 BD09 TileLayer', true, '成功创建带有 coordType: "bd09" 的图层');
+
+                // 测试添加到地图
+                if (window.map) {
+                    layer1.addTo(window.map);
+                    logTest('添加图层到地图', true, '图层成功添加到地图');
+                }
+
+            } catch (e) {
+                logTest('TileLayer 选项测试', false, e.message);
+            }
+        }
+
+        // 初始化地图
+        const map = L.map('map').setView([39.915, 116.404], 13);
+        window.map = map;
+
+        // 使用带有 coordType 的 TileLayer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            coordType: "gps84"  // 在 TypeScript 中这应该不会报错
+        }).addTo(map);
+
+        // 如果坐标转换器可用，添加一些测试标记
+        if (L.coordConverter) {
+            const testCoord = { lng: 116.404, lat: 39.915 };
+            const gcj02 = L.coordConverter.gps84ToGcj02(testCoord.lng, testCoord.lat);
+            const bd09 = L.coordConverter.gps84ToBd09(testCoord.lng, testCoord.lat);
+
+            L.marker([testCoord.lat, testCoord.lng]).addTo(map)
+                .bindPopup(`GPS84: ${testCoord.lng.toFixed(6)}, ${testCoord.lat.toFixed(6)}`);
+
+            L.marker([gcj02.lat, gcj02.lng]).addTo(map)
+                .bindPopup(`GCJ02: ${gcj02.lng.toFixed(6)}, ${gcj02.lat.toFixed(6)}`);
+
+            L.marker([bd09.lat, bd09.lng]).addTo(map)
+                .bindPopup(`BD09: ${bd09.lng.toFixed(6)}, ${bd09.lat.toFixed(6)}`);
+        }
+
+        // 自动运行测试
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runTypeTests, 1000);
+        });
+    </script>
+</body>
+
+</html>

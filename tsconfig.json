@@ -17,11 +17,11 @@
         "allowJs": true
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "examples/**/*"
     ],
     "exclude": [
         "node_modules",
-        "dist",
-        "examples"
+        "dist"
     ]
 }

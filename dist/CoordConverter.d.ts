@@ -61,26 +61,30 @@ declare module "leaflet" {
          * 创建坐标转换器实例的便捷方法
          */
         function coordConvert(): CoordConverter;
+    }
 
+    // 扩展现有的 TileLayerOptions 接口
+    interface TileLayerOptions {
         /**
-         * 扩展GridLayer选项以支持坐标转换
+         * 坐标系类型
          */
-        interface GridLayerOptions {
-            /**
-             * 坐标系类型
-             */
-            coordType?: "gps84" | "gcj02" | "bd09";
-        }
+        coordType?: "gps84" | "gcj02" | "bd09";
+    }
 
+    // 扩展现有的 GridLayerOptions 接口
+    interface GridLayerOptions {
         /**
-         * 扩展TrackPlayer选项以支持坐标转换
+         * 坐标系类型
          */
-        interface TrackPlayerOptions {
-            /**
-             * 输入轨迹的坐标系类型
-             */
-            coordType?: "gps84" | "gcj02" | "bd09";
-        }
+        coordType?: "gps84" | "gcj02" | "bd09";
+    }
+
+    // 扩展TrackPlayer选项以支持坐标转换
+    interface TrackPlayerOptions {
+        /**
+         * 输入轨迹的坐标系类型
+         */
+        coordType?: "gps84" | "gcj02" | "bd09";
     }
 }
 
