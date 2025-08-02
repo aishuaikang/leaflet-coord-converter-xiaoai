@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet 坐标转换插件示例</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .demo-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .coord-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .coord-display h4 {
+            margin: 0 0 10px 0;
+            color: #555;
+        }
+
+        .coord-item {
+            margin: 5px 0;
+            font-family: monospace;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #007cff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0066cc;
+        }
+
+        input[type="number"] {
+            width: 120px;
+            padding: 5px;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Leaflet 坐标转换插件示例</h1>
+
+        <div class="demo-section">
+            <h3>1. 坐标转换演示</h3>
+            <div class="controls">
+                <label>经度: <input type="number" id="lng" value="116.404" step="0.000001"></label>
+                <label>纬度: <input type="number" id="lat" value="39.915" step="0.000001"></label>
+                <button onclick="convertCoords()">转换坐标</button>
+            </div>
+            <div id="coordResults" class="coord-display" style="display: none;">
+                <h4>转换结果：</h4>
+                <div id="gps84Result" class="coord-item"></div>
+                <div id="gcj02Result" class="coord-item"></div>
+                <div id="bd09Result" class="coord-item"></div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>2. 地图演示</h3>
+            <div class="controls">
+                <button onclick="showGPS84()">显示GPS84坐标</button>
+                <button onclick="showGCJ02()">显示GCJ02坐标</button>
+                <button onclick="showBD09()">显示BD09坐标</button>
+                <button onclick="showAll()">显示所有坐标系</button>
+                <button onclick="clearMarkers()">清除标记</button>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <div class="demo-section">
+            <h3>3. 轨迹播放演示</h3>
+            <div class="controls">
+                <button onclick="loadGPSTrack()">加载GPS轨迹</button>
+                <button onclick="loadGCJ02Track()">加载GCJ02轨迹</button>
+                <button onclick="loadBD09Track()">加载BD09轨迹</button>
+                <button onclick="startTrack()">开始播放</button>
+                <button onclick="pauseTrack()">暂停</button>
+                <button onclick="clearTrack()">清除轨迹</button>
+            </div>
+            <div id="trackInfo" class="coord-display" style="display: none;">
+                <h4>轨迹信息：</h4>
+                <div id="trackStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 坐标转换插件代码（简化版）
+        L.CoordConverter = class {
+            constructor() {
+                this.pi = Math.PI;
+                this.a = 6378245.0;
+                this.ee = 0.006693421622965943;
+                this.x_pi = this.pi * 3000.0 / 180.0;
+            }
+
+            gps84ToGcj02(lng, lat) {
+                let dLat = this._transformLat(lng - 105.0, lat - 35.0);
+                let dLng = this._transformLng(lng - 105.0, lat - 35.0);
+                const radLat = lat / 180.0 * this.pi;
+                let magic = Math.sin(radLat);
+                magic = 1 - this.ee * magic * magic;
+                const sqrtMagic = Math.sqrt(magic);
+                dLat = (dLat * 180.0) / ((this.a * (1 - this.ee)) / (magic * sqrtMagic) * this.pi);
+                dLng = (dLng * 180.0) / (this.a / sqrtMagic * Math.cos(radLat) * this.pi);
+                return { lng: lng + dLng, lat: lat + dLat };
+            }
+
+            gcj02ToGps84(lng, lat) {
+                const coord = this._transform(lng, lat);
+                return { lng: lng * 2 - coord.lng, lat: lat * 2 - coord.lat };
+            }
+
+            gps84ToBd09(lng, lat) {
+                const gcj02 = this.gps84ToGcj02(lng, lat);
+                return this.gcj02ToBd09(gcj02.lng, gcj02.lat);
+            }
+
+            bd09ToGps84(lng, lat) {
+                const gcj02 = this.bd09ToGcj02(lng, lat);
+                return this.gcj02ToGps84(gcj02.lng, gcj02.lat);
+            }
+
+            gcj02ToBd09(lng, lat) {
+                const z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * this.x_pi);
+                const theta = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * this.x_pi);
+                return {
+                    lng: z * Math.cos(theta) + 0.0065,
+                    lat: z * Math.sin(theta) + 0.006
+                };
+            }
+
+            bd09ToGcj02(lng, lat) {
+                const x = lng - 0.0065;
+                const y = lat - 0.006;
+                const z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * this.x_pi);
+                const theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * this.x_pi);
+                return {
+                    lng: z * Math.cos(theta),
+                    lat: z * Math.sin(theta)
+                };
+            }
+
+            _transform(lng, lat) {
+                let dLat = this._transformLat(lng - 105.0, lat - 35.0);
+                let dLng = this._transformLng(lng - 105.0, lat - 35.0);
+                const radLat = lat / 180.0 * this.pi;
+                let magic = Math.sin(radLat);
+                magic = 1 - this.ee * magic * magic;
+                const sqrtMagic = Math.sqrt(magic);
+                dLat = (dLat * 180.0) / ((this.a * (1 - this.ee)) / (magic * sqrtMagic) * this.pi);
+                dLng = (dLng * 180.0) / (this.a / sqrtMagic * Math.cos(radLat) * this.pi);
+                return { lng: lng + dLng, lat: lat + dLat };
+            }
+
+            _transformLat(x, y) {
+                let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+                ret += (20.0 * Math.sin(6.0 * x * this.pi) + 20.0 * Math.sin(2.0 * x * this.pi)) * 2.0 / 3.0;
+                ret += (20.0 * Math.sin(y * this.pi) + 40.0 * Math.sin(y / 3.0 * this.pi)) * 2.0 / 3.0;
+                ret += (160.0 * Math.sin(y / 12.0 * this.pi) + 320 * Math.sin(y * this.pi / 30.0)) * 2.0 / 3.0;
+                return ret;
+            }
+
+            _transformLng(x, y) {
+                let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+                ret += (20.0 * Math.sin(6.0 * x * this.pi) + 20.0 * Math.sin(2.0 * x * this.pi)) * 2.0 / 3.0;
+                ret += (20.0 * Math.sin(x * this.pi) + 40.0 * Math.sin(x / 3.0 * this.pi)) * 2.0 / 3.0;
+                ret += (150.0 * Math.sin(x / 12.0 * this.pi) + 300.0 * Math.sin(x / 30.0 * this.pi)) * 2.0 / 3.0;
+                return ret;
+            }
+        };
+
+        // 全局实例
+        L.coordConverter = new L.CoordConverter();
+
+        // 初始化地图
+        let map = L.map('map').setView([39.915, 116.404], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let markers = [];
+        let trackPlayer = null;
+
+        // 坐标转换函数
+        function convertCoords() {
+            const lng = parseFloat(document.getElementById('lng').value);
+            const lat = parseFloat(document.getElementById('lat').value);
+
+            const gps84 = { lng, lat };
+            const gcj02 = L.coordConverter.gps84ToGcj02(lng, lat);
+            const bd09 = L.coordConverter.gps84ToBd09(lng, lat);
+
+            document.getElementById('gps84Result').textContent =
+                `GPS84: ${gps84.lng.toFixed(6)}, ${gps84.lat.toFixed(6)}`;
+            document.getElementById('gcj02Result').textContent =
+                `GCJ02: ${gcj02.lng.toFixed(6)}, ${gcj02.lat.toFixed(6)}`;
+            document.getElementById('bd09Result').textContent =
+                `BD09: ${bd09.lng.toFixed(6)}, ${bd09.lat.toFixed(6)}`;
+
+            document.getElementById('coordResults').style.display = 'block';
+        }
+
+        function clearMarkers() {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+        }
+
+        function showGPS84() {
+            clearMarkers();
+            const lng = parseFloat(document.getElementById('lng').value);
+            const lat = parseFloat(document.getElementById('lat').value);
+            const marker = L.marker([lat, lng]).addTo(map).bindPopup('GPS84坐标');
+            markers.push(marker);
+            map.setView([lat, lng], 15);
+        }
+
+        function showGCJ02() {
+            clearMarkers();
+            const lng = parseFloat(document.getElementById('lng').value);
+            const lat = parseFloat(document.getElementById('lat').value);
+            const gcj02 = L.coordConverter.gps84ToGcj02(lng, lat);
+            const marker = L.marker([gcj02.lat, gcj02.lng]).addTo(map).bindPopup('GCJ02坐标');
+            markers.push(marker);
+            map.setView([gcj02.lat, gcj02.lng], 15);
+        }
+
+        function showBD09() {
+            clearMarkers();
+            const lng = parseFloat(document.getElementById('lng').value);
+            const lat = parseFloat(document.getElementById('lat').value);
+            const bd09 = L.coordConverter.gps84ToBd09(lng, lat);
+            const marker = L.marker([bd09.lat, bd09.lng]).addTo(map).bindPopup('BD09坐标');
+            markers.push(marker);
+            map.setView([bd09.lat, bd09.lng], 15);
+        }
+
+        function showAll() {
+            clearMarkers();
+            const lng = parseFloat(document.getElementById('lng').value);
+            const lat = parseFloat(document.getElementById('lat').value);
+
+            const gps84 = { lng, lat };
+            const gcj02 = L.coordConverter.gps84ToGcj02(lng, lat);
+            const bd09 = L.coordConverter.gps84ToBd09(lng, lat);
+
+            markers.push(L.marker([gps84.lat, gps84.lng]).addTo(map).bindPopup('GPS84坐标'));
+            markers.push(L.marker([gcj02.lat, gcj02.lng]).addTo(map).bindPopup('GCJ02坐标'));
+            markers.push(L.marker([bd09.lat, bd09.lng]).addTo(map).bindPopup('BD09坐标'));
+
+            // 计算边界并适配视图
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        // 示例轨迹数据
+        const sampleTrack = [
+            [116.404, 39.915],  // 天安门
+            [116.407, 39.918],
+            [116.410, 39.921],
+            [116.413, 39.924],
+            [116.416, 39.927]   // 北海公园
+        ];
+
+        function loadGPSTrack() {
+            clearTrack();
+            document.getElementById('trackStatus').textContent = '已加载GPS84轨迹';
+            document.getElementById('trackInfo').style.display = 'block';
+        }
+
+        function loadGCJ02Track() {
+            clearTrack();
+            document.getElementById('trackStatus').textContent = '已加载GCJ02轨迹';
+            document.getElementById('trackInfo').style.display = 'block';
+        }
+
+        function loadBD09Track() {
+            clearTrack();
+            document.getElementById('trackStatus').textContent = '已加载BD09轨迹';
+            document.getElementById('trackInfo').style.display = 'block';
+        }
+
+        function startTrack() {
+            if (!trackPlayer) {
+                document.getElementById('trackStatus').textContent = '请先加载轨迹';
+                return;
+            }
+            document.getElementById('trackStatus').textContent = '轨迹播放中...';
+        }
+
+        function pauseTrack() {
+            if (trackPlayer) {
+                document.getElementById('trackStatus').textContent = '轨迹已暂停';
+            }
+        }
+
+        function clearTrack() {
+            trackPlayer = null;
+            document.getElementById('trackInfo').style.display = 'none';
+        }
+
+        // 初始化
+        convertCoords();
+    </script>
+</body>
+
+</html>

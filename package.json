@@ -1,0 +1,54 @@
+{
+    "name": "leaflet-coord-converter-xiaoai",
+    "version": "1.0.1",
+    "description": "一个 Leaflet 坐标转换插件，支持GPS84、GCJ02、BD09坐标系之间的转换，提供简单易用的 API 和完整的 TypeScript 类型定义。",
+    "main": "dist/leaflet-coord-converter.umd.cjs",
+    "module": "dist/leaflet-coord-converter.js",
+    "types": "dist/CoordConverter.d.ts",
+    "type": "module",
+    "files": [
+        "dist",
+        "src",
+        "examples"
+    ],
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "leaflet",
+        "coordinate",
+        "conversion",
+        "gps84",
+        "gcj02",
+        "bd09",
+        "wgs84",
+        "mars",
+        "baidu",
+        "china",
+        "gis",
+        "map",
+        "plugin",
+        "typescript",
+        "坐标转换",
+        "地图插件"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aishuaikang/leaflet-coord-converter-xiaoai"
+    },
+    "author": "ask",
+    "license": "MIT",
+    "devDependencies": {
+        "@turf/turf": "^6.5.0",
+        "@types/leaflet": "^1.9.20",
+        "leaflet": "^1.9.4",
+        "leaflet-polylinedecorator": "^1.6.0",
+        "leaflet-rotatedmarker": "^0.2.0",
+        "typescript": "^5.9.2",
+        "vite": "^5.0.12",
+        "vite-plugin-dts": "^4.5.4"
+    }
+}
