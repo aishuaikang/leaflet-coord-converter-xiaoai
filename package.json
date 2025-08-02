@@ -1,6 +1,6 @@
 {
     "name": "leaflet-coord-converter-xiaoai",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "一个 Leaflet 坐标转换插件，支持GPS84、GCJ02、BD09坐标系之间的转换，提供简单易用的 API 和完整的 TypeScript 类型定义。",
     "main": "dist/leaflet-coord-converter.umd.cjs",
     "module": "dist/leaflet-coord-converter.js",
